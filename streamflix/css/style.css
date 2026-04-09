@@ -145,6 +145,8 @@ img { display: block; max-width: 100%; }
 .btn-info:hover { background: rgba(109,109,110,0.4); }
 .btn-red { background: var(--red); color: #fff; }
 .btn-red:hover { background: #c40812; }
+.btn-trailer { background: rgba(255,0,0,0.15); color: #fff; border: 1px solid rgba(255,80,80,0.4); }
+.btn-trailer:hover { background: rgba(255,0,0,0.3); }
 
 /* ── ROWS ────────────────────────────────────────────────────── */
 .rows-wrapper {
@@ -205,7 +207,8 @@ img { display: block; max-width: 100%; }
 }
 .modal-overlay.active .modal { transform: translateY(0); }
 .modal-backdrop { position: relative; width: 100%; height: 220px; background: #000 center top / cover no-repeat; }
-.modal-backdrop-gradient { position: absolute; inset: 0; background: linear-gradient(to top, var(--surface) 0%, rgba(24,24,24,0.2) 100%); }
+.modal-backdrop-gradient { position: absolute; inset: 0; background: linear-gradient(to top, var(--surface) 0%, rgba(24,24,24,0.2) 100%); pointer-events: none; }
+.trailer-iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; z-index: 3; border-radius: inherit; }
 .modal-close {
   position: absolute; top: 12px; right: 12px; z-index: 10;
   background: rgba(30,30,30,0.9); color: var(--text);
