@@ -1,12 +1,12 @@
 /* ============================================================
-   StreamFlix — TMDB + Multi-Source Embed API
+   StreamFlix — TMDB + AutoEmbed API
    ============================================================ */
 
 const TMDB_KEY  = 'e7e658fd82cc0dd5ffd5cb4949f45b2c';
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const IMG_BASE  = 'https://image.tmdb.org/t/p';
 
-/* ─── Embed source: AutoEmbed Server 2 ───────────────────────── */
+/* ─── AutoEmbed Server 2 ─────────────────────────────────────── */
 const PLAYER_MOVIE = (id)     => `https://autoembed.co/movie/tmdb/${id}?server=2`;
 const PLAYER_TV    = (id,s,e) => `https://autoembed.co/tv/tmdb/${id}-${s}-${e}?server=2`;
 
@@ -43,14 +43,12 @@ const API = {
   tv:     (id) => tmdb(`/tv/${id}`,     { append_to_response: 'credits,videos,similar,keywords' }),
   season: (id, s) => tmdb(`/tv/${id}/season/${s}`),
   search: (q)  => tmdb('/search/multi', { query: q, include_adult: false }),
-
   playerUrl: (type, id, season=1, episode=1) =>
     type === 'movie' ? PLAYER_MOVIE(id) : PLAYER_TV(id, season, episode),
-
   img,
 };
 
-/* ─── Shared helpers (used by app.js & player.js) ────────────── */
+/* ─── Shared helpers ─────────────────────────────────────────── */
 function posterSrc(path)   { return img.poster(path)   || img.fallback; }
 function backdropSrc(path) { return img.backdrop(path) || ''; }
 function mediaType(item)   { return item.media_type || (item.title !== undefined ? 'movie' : 'tv'); }
