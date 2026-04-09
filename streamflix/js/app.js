@@ -250,16 +250,27 @@ async function openModal(type, id) {
     const cast    = (data.credits?.cast||[]).slice(0,5).map(c=>c.name).join(', ');
     const dir     = (data.credits?.crew||[]).find(c=>c.job==='Director')?.name||'';
 
-    if (data.backdrop_path)
-      document.getElementById('modal-backdrop').style.backgroundImage =
-        `url(${backdropSrc(data.backdrop_path)})`;
+    // Find best trailer from TMDB videos
+    const videos  = data.videos?.results || [];
+    const trailer = videos.find(v => v.site === 'YouTube' && v.type === 'Trailer')
+                 || videos.find(v => v.site === 'YouTube' && v.type === 'Teaser')
+                 || videos.find(v => v.site === 'YouTube');
 
-    document.getElementById('modal-hero-content').innerHTML = `
+    const backdropEl = document.getElementById('modal-backdrop');
+    const heroContent = document.getElementById('modal-hero-content');
+
+    if (data.backdrop_path)
+      backdropEl.style.backgroundImage = `url(${backdropSrc(data.backdrop_path)})`;
+
+    heroContent.innerHTML = `
       <h2 class="modal-title">${escHtml(title)}</h2>
       <div class="modal-actions">
         <button class="btn btn-play" id="modal-play-btn">
           <i class="fas fa-play"></i> Play
         </button>
+        ${trailer ? `<button class="btn btn-trailer" id="modal-trailer-btn">
+          <i class="fab fa-youtube"></i> Trailer
+        </button>` : ''}
       </div>`;
 
     document.getElementById('modal-play-btn').addEventListener('click', () => {
@@ -268,6 +279,29 @@ async function openModal(type, id) {
       watchNow(type, id, s, e);
       closeModal();
     });
+
+    // Trailer button — swaps backdrop image for YouTube embed
+    if (trailer) {
+      document.getElementById('modal-trailer-btn').addEventListener('click', () => {
+        const isPlaying = backdropEl.querySelector('.trailer-iframe');
+        if (isPlaying) {
+          // Toggle back to backdrop image
+          backdropEl.querySelectorAll('.trailer-iframe').forEach(el => el.remove());
+          backdropEl.style.backgroundImage = `url(${backdropSrc(data.backdrop_path)})`;
+          document.getElementById('modal-trailer-btn').innerHTML = '<i class="fab fa-youtube"></i> Trailer';
+        } else {
+          // Inject YouTube iframe over the backdrop
+          const iframe = document.createElement('iframe');
+          iframe.className = 'trailer-iframe';
+          iframe.src = `https://www.youtube.com/embed/${trailer.key}?autoplay=1&rel=0`;
+          iframe.allow = 'autoplay; encrypted-media; fullscreen';
+          iframe.allowFullscreen = true;
+          backdropEl.style.backgroundImage = 'none';
+          backdropEl.appendChild(iframe);
+          document.getElementById('modal-trailer-btn').innerHTML = '<i class="fas fa-image"></i> Hide';
+        }
+      });
+    }
 
     let picker = '';
     if (type === 'tv' && data.seasons) {
@@ -325,6 +359,8 @@ async function loadModalEps(tvId, season) {
 }
 
 function closeModal() {
+  // Stop trailer if playing
+  document.querySelectorAll('.trailer-iframe').forEach(el => el.remove());
   document.getElementById('modal-overlay').classList.remove('active');
   document.body.style.overflow = '';
 }
