@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#141414" />
   <title>StreamFlix — Watch Movies &amp; TV Shows</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" />
@@ -13,7 +14,12 @@
   <!-- NAVBAR -->
   <nav class="navbar" id="navbar">
     <div class="navbar-left">
+      <!-- Hamburger (mobile only) -->
+      <button class="hamburger" id="hamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
       <div class="logo" data-page="home">STREAMFLIX</div>
+      <!-- Desktop nav links -->
       <ul class="nav-links">
         <li><a href="#" data-page="home" class="active">Home</a></li>
         <li><a href="#" data-page="movies">Movies</a></li>
@@ -25,11 +31,18 @@
         <button class="search-icon-btn" id="search-icon-btn" aria-label="Search">
           <i class="fas fa-search"></i>
         </button>
-        <input type="text" id="search-input" placeholder="Search titles…"
+        <input type="text" id="search-input" placeholder="Search…"
                autocomplete="off" spellcheck="false" />
       </div>
     </div>
   </nav>
+
+  <!-- MOBILE NAV DRAWER -->
+  <div class="mobile-nav" id="mobile-nav">
+    <a href="#" data-page="home" class="active">🏠 Home</a>
+    <a href="#" data-page="movies">🎬 Movies</a>
+    <a href="#" data-page="tvshows">📺 TV Shows</a>
+  </div>
 
   <!-- HERO -->
   <section class="hero" id="hero">
