@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#000000" />
   <title>Watch — StreamFlix</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>▶️</text></svg>" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" />
@@ -14,14 +15,12 @@
   <nav class="watch-navbar">
     <a href="index.html" class="logo">STREAMFLIX</a>
     <a href="index.html" class="back-link">
-      <i class="fas fa-arrow-left"></i> Back to Browse
+      <i class="fas fa-arrow-left"></i> Browse
     </a>
   </nav>
 
-  <!-- SOURCE SWITCHER + PLAYER -->
+  <!-- PLAYER -->
   <div class="player-wrapper">
-
-    <!-- 16:9 player -->
     <div class="player-aspect">
       <iframe
         id="player-iframe"
@@ -32,21 +31,20 @@
         title="Video Player"
       ></iframe>
     </div>
-
   </div>
 
-  <!-- DETAILS + SIDEBAR -->
+  <!-- INFO + SIDEBAR -->
   <div class="player-details">
     <div class="player-main">
       <h1 class="player-title" id="player-title">
-        <span class="spinner" style="width:20px;height:20px;border-width:2px;display:inline-block;vertical-align:middle;"></span>
+        <span class="spinner" style="width:18px;height:18px;border-width:2px;display:inline-block;vertical-align:middle;"></span>
       </h1>
       <div class="player-meta"    id="player-meta"></div>
       <p  class="player-overview" id="player-overview"></p>
       <div id="player-extra"></div>
       <div id="ep-selector"></div>
     </div>
-    <aside class="player-sidebar">
+    <aside>
       <div id="similar-container"></div>
     </aside>
   </div>
