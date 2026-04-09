@@ -11,11 +11,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (!id) { window.location.href = 'index.html'; return; }
 
-  /* ── Load player ─────────────────────────────────────────── */
-  const iframe = document.getElementById('player-iframe');
-  iframe.src   = API.playerUrl(type, id, season, episode);
+  document.getElementById('player-iframe').src = API.playerUrl(type, id, season, episode);
 
-  /* ── Load content details ────────────────────────────────── */
   try {
     const data = type === 'movie' ? await API.movie(id) : await API.tv(id);
     renderInfo(data, type, season, episode);
@@ -27,38 +24,34 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
-/* ── Info panel ──────────────────────────────────────────────── */
 function renderInfo(data, type, season, episode) {
-  const title  = mediaTitle(data);
   const genres = (data.genres||[]).map(g=>g.name).join(' · ');
   const cast   = (data.credits?.cast||[]).slice(0,5).map(c=>c.name).join(', ');
   const dir    = (data.credits?.crew||[]).find(c=>c.job==='Director')?.name||'';
 
-  document.getElementById('player-title').textContent = title;
+  document.getElementById('player-title').textContent = mediaTitle(data);
   document.getElementById('player-meta').innerHTML = `
     <span class="p-rating">★ ${mediaRating(data)}</span>
     <span class="p-year">${mediaYear(data)}</span>
-    ${type==='tv' ? `<span class="p-ep">S${season} E${episode}</span>` : ''}
+    ${type==='tv' ? `<span class="p-ep">S${season} · E${episode}</span>` : ''}
     ${genres ? `<span>${genres}</span>` : ''}
     ${data.runtime ? `<span>${data.runtime} min</span>` : ''}
     ${data.number_of_seasons ? `<span>${data.number_of_seasons} Season${data.number_of_seasons>1?'s':''}</span>` : ''}`;
-  document.getElementById('player-overview').textContent =
-    data.overview || 'No description available.';
+  document.getElementById('player-overview').textContent = data.overview || '';
 
   const ex = document.getElementById('player-extra');
   if (ex) ex.innerHTML = `
-    ${cast ? `<p style="font-size:13px;color:#888;margin-top:12px;"><strong style="color:#aaa;">Cast:</strong> ${escHtml(cast)}</p>` : ''}
-    ${dir  ? `<p style="font-size:13px;color:#888;margin-top:6px;"><strong style="color:#aaa;">Director:</strong> ${escHtml(dir)}</p>` : ''}`;
+    ${cast ? `<p><strong>Cast:</strong> ${escHtml(cast)}</p>` : ''}
+    ${dir  ? `<p><strong>Director:</strong> ${escHtml(dir)}</p>` : ''}`;
 }
 
-/* ── Episode selector ────────────────────────────────────────── */
 async function renderEpSelector(data, tvId, curSeason, curEp) {
   const container = document.getElementById('ep-selector');
   if (!container) return;
   const seasons = (data.seasons||[]).filter(s => s.season_number > 0);
   if (!seasons.length) return;
 
-  const seasonSel  = document.createElement('select');
+  const seasonSel = document.createElement('select');
   seasonSel.className = 'select-styled';
   seasons.forEach(s => {
     const o = document.createElement('option');
@@ -94,14 +87,14 @@ async function renderEpSelector(data, tvId, curSeason, curEp) {
   watchBtn.className = 'btn btn-red';
   watchBtn.innerHTML = '<i class="fas fa-play"></i> Watch Episode';
   watchBtn.addEventListener('click', () => {
-    const s = seasonSel.value;
-    const e = epSel.value;
-    window.location.href = `watch.html?${new URLSearchParams({ type: 'tv', id: tvId, season: s, episode: e })}`;
+    window.location.href = `watch.html?${new URLSearchParams({
+      type: 'tv', id: tvId, season: seasonSel.value, episode: epSel.value
+    })}`;
   });
 
   const box = document.createElement('div');
   box.className = 'ep-selector-box';
-  box.innerHTML = '<h3><i class="fas fa-list-ul" style="margin-right:8px;color:var(--red);"></i>Episodes</h3>';
+  box.innerHTML = '<h3><i class="fas fa-list-ul" style="margin-right:7px;color:var(--red);"></i>Episodes</h3>';
   const ctrl = document.createElement('div');
   ctrl.className = 'ep-controls';
   [seasonSel, epSel, watchBtn].forEach(el => ctrl.appendChild(el));
@@ -109,11 +102,10 @@ async function renderEpSelector(data, tvId, curSeason, curEp) {
   container.appendChild(box);
 }
 
-/* ── Similar content ─────────────────────────────────────────── */
 function renderSimilar(items, type) {
   const c = document.getElementById('similar-container');
   if (!c) return;
-  const filtered = items.filter(i => i.poster_path).slice(0, 10);
+  const filtered = items.filter(i => i.poster_path).slice(0, 12);
   if (!filtered.length) return;
 
   const titleEl = document.createElement('div');
@@ -129,14 +121,13 @@ function renderSimilar(items, type) {
     el.className = 'similar-item';
     el.innerHTML = `
       <img src="${posterSrc(item.poster_path)}" alt="${escHtml(mediaTitle(item))}"
-           onerror="this.src='${API.img.fallback}'">
+           onerror="this.src='${API.img.fallback}'" loading="lazy">
       <div class="similar-item-info">
         <div class="similar-item-title">${escHtml(mediaTitle(item))}</div>
         <div class="similar-item-meta">
           <span class="s-rating">★ ${mediaRating(item)}</span>
           <span>${mediaYear(item)}</span>
         </div>
-        <div class="similar-item-overview">${escHtml(item.overview||'')}</div>
       </div>`;
     el.addEventListener('click', () => {
       window.location.href = `watch.html?${new URLSearchParams({type, id: item.id, season:1, episode:1})}`;
