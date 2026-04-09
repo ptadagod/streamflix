@@ -12,15 +12,31 @@ document.addEventListener('DOMContentLoaded', () => {
   loadHome();
 });
 
-/* ── Navbar ──────────────────────────────────────────────────── */
+/* ── Navbar + Hamburger ──────────────────────────────────────── */
 function initNavbar() {
-  const navbar = document.getElementById('navbar');
+  const navbar    = document.getElementById('navbar');
+  const hamburger = document.getElementById('hamburger');
+  const mobileNav = document.getElementById('mobile-nav');
+
   window.addEventListener('scroll', () => {
     navbar.classList.toggle('scrolled', window.scrollY > 50);
   }, { passive: true });
 
+  // Hamburger toggle
+  hamburger?.addEventListener('click', () => {
+    hamburger.classList.toggle('open');
+    mobileNav.classList.toggle('open');
+  });
+
+  // Nav link clicks (desktop + mobile)
   document.querySelectorAll('[data-page]').forEach(el => {
-    el.addEventListener('click', e => { e.preventDefault(); goToPage(el.dataset.page); });
+    el.addEventListener('click', e => {
+      e.preventDefault();
+      // Close mobile nav
+      hamburger?.classList.remove('open');
+      mobileNav?.classList.remove('open');
+      goToPage(el.dataset.page);
+    });
   });
 }
 
@@ -47,14 +63,14 @@ async function loadHome() {
     ]);
     const w = document.getElementById('rows-wrapper');
     w.innerHTML = '';
-    appendRow(w, '🔥 Trending Now',           trending.results);
-    appendRow(w, '🎬 Popular Movies',          popM.results);
-    appendRow(w, '📺 Popular TV Shows',        popTV.results);
-    appendRow(w, '⭐ Top Rated Movies',        topM.results);
-    appendRow(w, '⭐ Top Rated TV',            topTV.results);
-    appendRow(w, '🎞️ Now Playing in Cinemas',  now.results);
+    appendRow(w, '🔥 Trending Now',          trending.results);
+    appendRow(w, '🎬 Popular Movies',         popM.results);
+    appendRow(w, '📺 Popular TV Shows',       popTV.results);
+    appendRow(w, '⭐ Top Rated Movies',       topM.results);
+    appendRow(w, '⭐ Top Rated TV',           topTV.results);
+    appendRow(w, '🎞️ Now Playing in Cinemas', now.results);
   } catch (e) {
-    setRows(errState('Failed to load content. Check your connection.'));
+    setRows(errState('Failed to load. Check your connection.'));
     console.error(e);
   }
 }
@@ -64,8 +80,8 @@ async function loadHero() {
     const data  = await API.trending();
     const items = data.results.filter(i => i.backdrop_path && i.overview);
     if (!items.length) return;
-    const f     = items[Math.floor(Math.random() * Math.min(5, items.length))];
-    const type  = mediaType(f);
+    const f    = items[Math.floor(Math.random() * Math.min(5, items.length))];
+    const type = mediaType(f);
     document.getElementById('hero').style.backgroundImage =
       `url(${backdropSrc(f.backdrop_path).replace('w1280','original')})`;
     document.getElementById('hero-content').innerHTML = `
@@ -82,7 +98,7 @@ async function loadHero() {
           <i class="fas fa-play"></i> Play
         </button>
         <button class="btn btn-info" onclick="openModal('${type}',${f.id})">
-          <i class="fas fa-info-circle"></i> More Info
+          <i class="fas fa-info-circle"></i> Info
         </button>
       </div>`;
   } catch (e) { console.warn('Hero error:', e); }
@@ -97,7 +113,7 @@ async function loadMoviesPage() {
       API.popularMovies(), API.topMovies(), API.nowPlaying(), API.upcoming()
     ]);
     const w = document.getElementById('rows-wrapper');
-    w.innerHTML = ''; w.style.marginTop = '80px';
+    w.innerHTML = ''; w.style.paddingTop = '80px';
     appendRow(w,'🎬 Popular Movies', pop.results);
     appendRow(w,'⭐ Top Rated',      top.results);
     appendRow(w,'🎞️ Now Playing',    now.results);
@@ -113,7 +129,7 @@ async function loadTVPage() {
       API.popularTV(), API.topTV(), API.airingToday(), API.onAir()
     ]);
     const w = document.getElementById('rows-wrapper');
-    w.innerHTML = ''; w.style.marginTop = '80px';
+    w.innerHTML = ''; w.style.paddingTop = '80px';
     appendRow(w,'📺 Popular TV Shows', pop.results);
     appendRow(w,'⭐ Top Rated Series', top.results);
     appendRow(w,'📡 Airing Today',     today.results);
@@ -171,7 +187,7 @@ function initSearch() {
   });
   input.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
-      document.getElementById('search-wrap').classList.remove('open');
+      wrap.classList.remove('open');
       input.value = ''; closeSearch();
     }
   });
@@ -191,7 +207,7 @@ async function doSearch(query) {
     );
     grid.innerHTML = '';
     if (!filtered.length) {
-      grid.innerHTML = `<div class="empty-state"><i class="fas fa-film"></i><p>No results for "${escHtml(query)}"</p></div>`;
+      grid.innerHTML = `<div class="empty-state"><i class="fas fa-film"></i><p>No results found</p></div>`;
       return;
     }
     filtered.forEach(item => grid.appendChild(buildCard(item)));
@@ -231,7 +247,7 @@ async function openModal(type, id) {
       ? (data.runtime ? `${data.runtime} min` : '')
       : (data.number_of_seasons ? `${data.number_of_seasons} Season${data.number_of_seasons > 1 ? 's' : ''}` : '');
     const genres  = (data.genres||[]).map(g=>`<span class="genre-pill">${escHtml(g.name)}</span>`).join('');
-    const cast    = (data.credits?.cast||[]).slice(0,6).map(c=>c.name).join(', ');
+    const cast    = (data.credits?.cast||[]).slice(0,5).map(c=>c.name).join(', ');
     const dir     = (data.credits?.crew||[]).find(c=>c.job==='Director')?.name||'';
 
     if (data.backdrop_path)
@@ -253,7 +269,6 @@ async function openModal(type, id) {
       closeModal();
     });
 
-    // Episode picker for TV
     let picker = '';
     if (type === 'tv' && data.seasons) {
       const seasons = data.seasons.filter(s => s.season_number > 0);
@@ -283,8 +298,7 @@ async function openModal(type, id) {
       <dl class="modal-details-grid">
         ${cast ? `<div class="modal-detail"><dt>Cast</dt><dd>${escHtml(cast)}</dd></div>` : ''}
         ${dir  ? `<div class="modal-detail"><dt>Director</dt><dd>${escHtml(dir)}</dd></div>` : ''}
-        ${data.status  ? `<div class="modal-detail"><dt>Status</dt><dd>${escHtml(data.status)}</dd></div>` : ''}
-        ${data.tagline ? `<div class="modal-detail"><dt>Tagline</dt><dd><em>${escHtml(data.tagline)}</em></dd></div>` : ''}
+        ${data.status ? `<div class="modal-detail"><dt>Status</dt><dd>${escHtml(data.status)}</dd></div>` : ''}
       </dl>`;
 
     if (type === 'tv' && data.seasons) {
