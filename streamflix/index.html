@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StreamFlix — Watch Movies &amp; TV Shows</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar" id="navbar">
+    <div class="navbar-left">
+      <div class="logo" data-page="home">STREAMFLIX</div>
+      <ul class="nav-links">
+        <li><a href="#" data-page="home" class="active">Home</a></li>
+        <li><a href="#" data-page="movies">Movies</a></li>
+        <li><a href="#" data-page="tvshows">TV Shows</a></li>
+      </ul>
+    </div>
+    <div class="navbar-right">
+      <div class="search-wrap" id="search-wrap">
+        <button class="search-icon-btn" id="search-icon-btn" aria-label="Search">
+          <i class="fas fa-search"></i>
+        </button>
+        <input type="text" id="search-input" placeholder="Search titles…"
+               autocomplete="off" spellcheck="false" />
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero" id="hero">
+    <div class="hero-gradient"></div>
+    <div class="hero-content" id="hero-content">
+      <div class="spinner-wrap" style="padding:0;"><div class="spinner"></div></div>
+    </div>
+  </section>
+
+  <!-- CONTENT ROWS -->
+  <main class="rows-wrapper" id="rows-wrapper">
+    <div class="spinner-wrap"><div class="spinner"></div></div>
+  </main>
+
+  <!-- SEARCH RESULTS -->
+  <section class="search-page" id="search-page">
+    <h2>Results for <span></span></h2>
+    <div class="cards-grid" id="search-grid"></div>
+  </section>
+
+  <!-- MODAL -->
+  <div class="modal-overlay" id="modal-overlay" role="dialog" aria-modal="true">
+    <div class="modal">
+      <button class="modal-close" id="modal-close" aria-label="Close">
+        <i class="fas fa-times"></i>
+      </button>
+      <div class="modal-backdrop" id="modal-backdrop">
+        <div class="modal-backdrop-gradient"></div>
+        <div class="modal-hero-content" id="modal-hero-content"></div>
+      </div>
+      <div class="modal-body" id="modal-body">
+        <div class="spinner-wrap"><div class="spinner"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
