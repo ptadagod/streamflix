@@ -1,5 +1,5 @@
 /* ============================================================
-   StreamFlix — TMDB + AutoEmbed API
+   StreamFlix — TMDB + AutoEmbed + Sports API
    ============================================================ */
 
 const TMDB_KEY  = 'e7e658fd82cc0dd5ffd5cb4949f45b2c';
@@ -10,6 +10,13 @@ const IMG_BASE  = 'https://image.tmdb.org/t/p';
 const PLAYER_MOVIE = (id)     => `https://autoembed.co/movie/tmdb/${id}?server=2`;
 const PLAYER_TV    = (id,s,e) => `https://autoembed.co/tv/tmdb/${id}-${s}-${e}?server=2`;
 
+/* ─── Sports (streamed.su + embedme.top) ─────────────────────── */
+// streamed.su has CORS open — no proxy needed
+const STREAMED_API  = 'https://streamed.su/api';
+// embedme.top serves the actual stream iframes
+const SPORTS_EMBED  = (source, id, idx = 1) =>
+  `https://embedme.top/embed/${source}/${id}/${idx}`;
+
 /* ─── Image helpers ──────────────────────────────────────────── */
 const img = {
   poster:   (path, size='w342')  => path ? `${IMG_BASE}/${size}${path}` : null,
@@ -17,7 +24,7 @@ const img = {
   fallback: 'https://placehold.co/342x513/1a1a1a/555?text=No+Image',
 };
 
-/* ─── Core fetch ─────────────────────────────────────────────── */
+/* ─── Core TMDB fetch ────────────────────────────────────────── */
 async function tmdb(endpoint, params = {}) {
   const url = new URL(`${TMDB_BASE}${endpoint}`);
   url.searchParams.set('api_key', TMDB_KEY);
@@ -26,6 +33,13 @@ async function tmdb(endpoint, params = {}) {
   const res = await fetch(url.toString());
   if (!res.ok) throw new Error(`TMDB ${res.status}: ${endpoint}`);
   return res.json();
+}
+
+/* ─── Sports schedule fetch (streamed.su) ────────────────────── */
+async function fetchSportsMatches() {
+  const res = await fetch(`${STREAMED_API}/matches/all`);
+  if (!res.ok) throw new Error(`Schedule unavailable (${res.status})`);
+  return res.json(); // returns array of match objects
 }
 
 /* ─── Public API ─────────────────────────────────────────────── */
@@ -45,6 +59,8 @@ const API = {
   search: (q)  => tmdb('/search/multi', { query: q, include_adult: false }),
   playerUrl: (type, id, season=1, episode=1) =>
     type === 'movie' ? PLAYER_MOVIE(id) : PLAYER_TV(id, season, episode),
+  sportsMatches: () => fetchSportsMatches(),
+  sportsEmbed:   (source, id, idx) => SPORTS_EMBED(source, id, idx),
   img,
 };
 
