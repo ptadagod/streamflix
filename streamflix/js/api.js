@@ -1,5 +1,5 @@
 /* ============================================================
-   StreamFlix — TMDB + AutoEmbed + Sports API
+   StreamFlix — TMDB + AutoEmbed + ESPN Sports API
    ============================================================ */
 
 const TMDB_KEY  = 'e7e658fd82cc0dd5ffd5cb4949f45b2c';
@@ -10,12 +10,81 @@ const IMG_BASE  = 'https://image.tmdb.org/t/p';
 const PLAYER_MOVIE = (id)     => `https://autoembed.co/movie/tmdb/${id}?server=2`;
 const PLAYER_TV    = (id,s,e) => `https://autoembed.co/tv/tmdb/${id}-${s}-${e}?server=2`;
 
-/* ─── Sports (streamed.su + embedme.top) ─────────────────────── */
-// streamed.su has CORS open — no proxy needed
-const STREAMED_API  = 'https://streamed.su/api';
-// embedme.top serves the actual stream iframes
-const SPORTS_EMBED  = (source, id, idx = 1) =>
-  `https://embedme.top/embed/${source}/${id}/${idx}`;
+/* ─── Sports: ESPN public scoreboard (CORS-open, no key) ─────── */
+// Each entry = { sport, label, icon, espnUrl, channels }
+// channels = DaddyLive embeds relevant to that sport
+const ESPN_SPORTS = [
+  {
+    sport: 'soccer-epl',  label: 'Premier League', icon: '⚽',
+    url: 'https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard',
+    channels: [
+      { name: 'Sky Sports PL',   id: 2  },
+      { name: 'Sky Sports Main', id: 1  },
+      { name: 'Sky Sports Football', id: 3 },
+      { name: 'beIN Sports 1',   id: 21 },
+    ],
+  },
+  {
+    sport: 'soccer-ucl', label: 'Champions League', icon: '⚽',
+    url: 'https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.champions/scoreboard',
+    channels: [
+      { name: 'Sky Sports Main', id: 1  },
+      { name: 'BT Sport / TNT 1',id: 15 },
+      { name: 'beIN Sports 1',   id: 21 },
+    ],
+  },
+  {
+    sport: 'soccer-laliga', label: 'La Liga', icon: '⚽',
+    url: 'https://site.api.espn.com/apis/site/v2/sports/soccer/esp.1/scoreboard',
+    channels: [
+      { name: 'beIN Sports 1',   id: 21 },
+      { name: 'beIN Sports 2',   id: 22 },
+      { name: 'Sky Sports Football', id: 3 },
+    ],
+  },
+  {
+    sport: 'nfl',  label: 'NFL',  icon: '🏈',
+    url: 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard',
+    channels: [
+      { name: 'ESPN',         id: 19 },
+      { name: 'ESPN 2',       id: 20 },
+      { name: 'Fox Sports 1', id: 63 },
+      { name: 'NFL Network',  id: 56 },
+    ],
+  },
+  {
+    sport: 'nba',  label: 'NBA',  icon: '🏀',
+    url: 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard',
+    channels: [
+      { name: 'ESPN',       id: 19 },
+      { name: 'ESPN 2',     id: 20 },
+      { name: 'NBA TV',     id: 57 },
+      { name: 'TNT Sports', id: 15 },
+    ],
+  },
+  {
+    sport: 'nhl',  label: 'NHL',  icon: '🏒',
+    url: 'https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard',
+    channels: [
+      { name: 'ESPN',       id: 19 },
+      { name: 'ESPN 2',     id: 20 },
+      { name: 'TNT Sports', id: 15 },
+      { name: 'NHL Network',id: 59 },
+    ],
+  },
+  {
+    sport: 'mlb',  label: 'MLB',  icon: '⚾',
+    url: 'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard',
+    channels: [
+      { name: 'ESPN',        id: 19 },
+      { name: 'Fox Sports 1',id: 63 },
+      { name: 'MLB Network', id: 58 },
+    ],
+  },
+];
+
+/* DaddyLive stream embed */
+const DADDY_STREAM = id => `https://dlhd.sx/stream/stream-${id}.php`;
 
 /* ─── Image helpers ──────────────────────────────────────────── */
 const img = {
@@ -35,32 +104,54 @@ async function tmdb(endpoint, params = {}) {
   return res.json();
 }
 
-/* ─── Sports schedule fetch ──────────────────────────────────── */
-async function fetchSportsMatches() {
-  const TARGET = `${STREAMED_API}/matches/all`;
+/* ─── ESPN scoreboard fetch ──────────────────────────────────── */
+async function fetchESPNSport(sportDef) {
+  try {
+    const res = await fetch(sportDef.url);
+    if (!res.ok) return [];
+    const json = await res.json();
 
-  const attempts = [
-    { name: 'direct',      url: () => TARGET },
-    { name: 'allorigins',  url: () => `https://api.allorigins.win/raw?url=${encodeURIComponent(TARGET)}` },
-    { name: 'corsproxy',   url: () => `https://corsproxy.io/?${encodeURIComponent(TARGET)}` },
-    { name: 'codetabs',    url: () => `https://api.codetabs.com/v1/proxy?quest=${TARGET}` },
-  ];
+    return (json.events || []).map(ev => {
+      const comp  = ev.competitions?.[0] || {};
+      const home  = comp.competitors?.find(c => c.homeAway === 'home');
+      const away  = comp.competitors?.find(c => c.homeAway === 'away');
+      const state = ev.status?.type?.state || 'pre';
+      const score = state === 'in' || state === 'post'
+        ? `${away?.score ?? ''}–${home?.score ?? ''}`
+        : null;
 
-  for (const { name, url } of attempts) {
-    try {
-      console.log(`[Sports] trying ${name}…`);
-      const res = await fetch(url(), { signal: AbortSignal.timeout(8000) });
-      if (!res.ok) { console.warn(`[Sports] ${name} → HTTP ${res.status}`); continue; }
-      const data = await res.json();
-      if (!Array.isArray(data)) { console.warn(`[Sports] ${name} → not an array`); continue; }
-      console.log(`[Sports] ${name} ✓  (${data.length} matches)`);
-      return data;
-    } catch (e) {
-      console.warn(`[Sports] ${name} failed:`, e.message);
-    }
+      return {
+        id:       ev.id,
+        title:    ev.name || ev.shortName,
+        date:     new Date(ev.date).getTime(),
+        category: sportDef.sport,
+        label:    sportDef.label,
+        icon:     sportDef.icon,
+        state,                          // 'pre' | 'in' | 'post'
+        score,
+        detail:   ev.status?.type?.detail || '',
+        homeLogo: home?.team?.logo || '',
+        awayLogo: away?.team?.logo || '',
+        channels: sportDef.channels,   // DaddyLive channels for this sport
+      };
+    });
+  } catch (e) {
+    console.warn(`ESPN fetch failed for ${sportDef.sport}:`, e.message);
+    return [];
   }
+}
 
-  throw new Error('Could not load schedule — all sources failed. Open DevTools → Console for details.');
+async function fetchSportsMatches() {
+  const results = await Promise.all(ESPN_SPORTS.map(fetchESPNSport));
+  const all = results.flat();
+  // sort: in-progress first, then pre by time, then post
+  all.sort((a, b) => {
+    const order = { in: 0, pre: 1, post: 2 };
+    const ao = order[a.state] ?? 1, bo = order[b.state] ?? 1;
+    if (ao !== bo) return ao - bo;
+    return a.date - b.date;
+  });
+  return all;
 }
 
 /* ─── Public API ─────────────────────────────────────────────── */
@@ -81,7 +172,7 @@ const API = {
   playerUrl: (type, id, season=1, episode=1) =>
     type === 'movie' ? PLAYER_MOVIE(id) : PLAYER_TV(id, season, episode),
   sportsMatches: () => fetchSportsMatches(),
-  sportsEmbed:   (source, id, idx) => SPORTS_EMBED(source, id, idx),
+  sportsStream:  id => DADDY_STREAM(id),
   img,
 };
 

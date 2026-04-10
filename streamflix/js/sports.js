@@ -1,41 +1,9 @@
 /* ============================================================
-   StreamFlix Sports — standalone sports page JS
-   Data: streamed.su   Player: embedme.top
+   StreamFlix Sports — ESPN schedule + DaddyLive streams
    ============================================================ */
 
-const SPORT_META = {
-  'football':          { label: 'Football',          icon: '⚽' },
-  'american-football': { label: 'American Football', icon: '🏈' },
-  'basketball':        { label: 'Basketball',        icon: '🏀' },
-  'baseball':          { label: 'Baseball',          icon: '⚾' },
-  'hockey':            { label: 'Hockey',            icon: '🏒' },
-  'tennis':            { label: 'Tennis',            icon: '🎾' },
-  'rugby':             { label: 'Rugby',             icon: '🏉' },
-  'golf':              { label: 'Golf',              icon: '⛳' },
-  'boxing':            { label: 'Boxing',            icon: '🥊' },
-  'mma':               { label: 'MMA / UFC',         icon: '🥋' },
-  'motor-sport':       { label: 'Motor Sport',       icon: '🏎️' },
-  'cricket':           { label: 'Cricket',           icon: '🏏' },
-  'other':             { label: 'Other',             icon: '🏆' },
-};
-
-const icon  = cat => SPORT_META[cat]?.icon  || '🏆';
-const label = cat => SPORT_META[cat]?.label || cat;
-
-/* ── State ───────────────────────────────────────────────────── */
-let allMatches  = [];
-let activeTab   = 'all';
-
-/* ── Helpers ─────────────────────────────────────────────────── */
-function isLive(m) {
-  if (!m.date) return false;
-  const now = Date.now(), start = m.date;
-  return now >= start && now < start + 3 * 3600000;
-}
-function matchTime(m) {
-  if (!m.date) return '';
-  return new Date(m.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
+let allMatches = [];
+let activeTab  = 'all';
 
 /* ── Boot ────────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', init);
@@ -43,6 +11,7 @@ document.addEventListener('DOMContentLoaded', init);
 async function init() {
   try {
     allMatches = await API.sportsMatches();
+    if (!allMatches.length) throw new Error('No events found for today.');
     renderTabs();
     renderList('all');
   } catch (err) {
@@ -50,7 +19,7 @@ async function init() {
       <div class="sp-empty">
         <i class="fas fa-satellite-dish"></i>
         <p>Could not load schedule</p>
-        <small>${err.message}</small><br>
+        <small>${escHtml(err.message)}</small><br>
         <button class="sp-retry-btn" onclick="location.reload()">Try Again</button>
       </div>`;
   }
@@ -61,11 +30,9 @@ function renderTabs() {
   const el = document.getElementById('sp-tabs');
   el.innerHTML = '';
 
+  // Count by sport label
   const counts = {};
-  allMatches.forEach(m => {
-    const c = m.category || 'other';
-    counts[c] = (counts[c] || 0) + 1;
-  });
+  allMatches.forEach(m => { counts[m.category] = (counts[m.category] || 0) + 1; });
 
   const makeTab = (cat, text) => {
     const b = document.createElement('button');
@@ -80,13 +47,16 @@ function renderTabs() {
     return b;
   };
 
-  el.appendChild(makeTab('all', `All  (${allMatches.length})`));
+  el.appendChild(makeTab('all', `All (${allMatches.length})`));
 
-  Object.entries(counts)
-    .sort((a, b) => b[1] - a[1])
-    .forEach(([cat, n]) =>
-      el.appendChild(makeTab(cat, `${icon(cat)} ${label(cat)} (${n})`))
-    );
+  // Build unique sports in order they appear
+  const seen = new Set();
+  allMatches.forEach(m => {
+    if (!seen.has(m.category)) {
+      seen.add(m.category);
+      el.appendChild(makeTab(m.category, `${m.icon} ${m.label} (${counts[m.category]})`));
+    }
+  });
 }
 
 /* ── Match list ──────────────────────────────────────────────── */
@@ -94,17 +64,9 @@ function renderList(tab) {
   const list = document.getElementById('sp-list');
   list.innerHTML = '';
 
-  let matches = tab === 'all'
-    ? [...allMatches]
-    : allMatches.filter(m => (m.category || 'other') === tab);
-
-  // Sort: live first, then by start time
-  matches.sort((a, b) => {
-    const al = isLive(a), bl = isLive(b);
-    if (al && !bl) return -1;
-    if (!al && bl) return 1;
-    return (a.date || 0) - (b.date || 0);
-  });
+  const matches = tab === 'all'
+    ? allMatches
+    : allMatches.filter(m => m.category === tab);
 
   if (!matches.length) {
     list.innerHTML = `<div class="sp-empty">
@@ -115,28 +77,21 @@ function renderList(tab) {
   }
 
   if (tab === 'all') {
-    // Group by sport when showing all
+    // Group by sport
     const groups = {};
     matches.forEach(m => {
-      const c = m.category || 'other';
-      if (!groups[c]) groups[c] = [];
-      groups[c].push(m);
+      if (!groups[m.category]) groups[m.category] = [];
+      groups[m.category].push(m);
     });
-
-    // Live sports at top
-    const liveFirst = Object.entries(groups).sort(([, a], [, b]) => {
-      const aHasLive = a.some(isLive), bHasLive = b.some(isLive);
-      return (bHasLive ? 1 : 0) - (aHasLive ? 1 : 0);
-    });
-
-    liveFirst.forEach(([cat, events]) => {
-      const header = document.createElement('div');
-      header.className = 'sp-section-header';
-      header.innerHTML = `
-        <span class="sp-section-icon">${icon(cat)}</span>
-        <span class="sp-section-name">${label(cat)}</span>
+    Object.entries(groups).forEach(([, events]) => {
+      const { icon, label } = events[0];
+      const hdr = document.createElement('div');
+      hdr.className = 'sp-section-header';
+      hdr.innerHTML = `
+        <span class="sp-section-icon">${icon}</span>
+        <span class="sp-section-name">${escHtml(label)}</span>
         <span class="sp-section-count">${events.length} match${events.length !== 1 ? 'es' : ''}</span>`;
-      list.appendChild(header);
+      list.appendChild(hdr);
       events.forEach(m => list.appendChild(buildCard(m)));
     });
   } else {
@@ -144,64 +99,65 @@ function renderList(tab) {
   }
 }
 
-/* ── Build match card ────────────────────────────────────────── */
+/* ── Build a match card ──────────────────────────────────────── */
 function buildCard(match) {
-  const live    = isLive(match);
-  const time    = matchTime(match);
-  const sources = match.sources || [];
-  const title   = match.title || 'Unknown Match';
+  const live = match.state === 'in';
+  const done = match.state === 'post';
+  const time = match.date
+    ? new Date(match.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : '';
 
   const card = document.createElement('div');
-  card.className = 'sp-match' + (live ? ' is-live' : '');
+  card.className = 'sp-match' + (live ? ' is-live' : '') + (done ? ' is-done' : '');
+  card._channels = match.channels || [];
+  card._title    = match.title;
 
-  // Time column
-  const timeCol = `
-    <div class="sp-match-time">
-      <span class="sp-time-val">${time || '—'}</span>
-      ${live ? '<span class="sp-live-tag">● LIVE</span>' : ''}
+  // Time / status column
+  let statusHtml = '';
+  if (live) {
+    statusHtml = `<div class="sp-match-time">
+      <span class="sp-live-tag">● LIVE</span>
+      ${match.score ? `<span class="sp-score">${escHtml(match.score)}</span>` : ''}
     </div>`;
-
-  // Info column
-  const infoCol = `
-    <div class="sp-match-info">
-      <div class="sp-match-title">${escHtml(title)}</div>
-      <div class="sp-match-sub">
-        ${match.popular ? '<span class="sp-popular-tag">🔥 Popular</span>' : ''}
-        ${sources.length > 1 ? `<span>${sources.length} streams available</span>` : ''}
-      </div>
+  } else if (done) {
+    statusHtml = `<div class="sp-match-time">
+      <span class="sp-time-val" style="color:#666">FT</span>
+      ${match.score ? `<span class="sp-score" style="color:#aaa">${escHtml(match.score)}</span>` : ''}
     </div>`;
-
-  // Stream buttons
-  let streamsCol = '';
-  if (sources.length === 0) {
-    streamsCol = `<div class="sp-match-streams"><span class="sp-no-stream">No stream</span></div>`;
-  } else if (sources.length === 1) {
-    streamsCol = `
-      <div class="sp-match-streams">
-        <button class="sp-stream-btn" onclick="openPlayer('${sources[0].source}','${sources[0].id}',this)">
-          <i class="fas fa-play"></i> Watch
-        </button>
-      </div>`;
   } else {
-    streamsCol = `
-      <div class="sp-match-streams">
-        <button class="sp-stream-btn" onclick="openPlayer('${sources[0].source}','${sources[0].id}',this)">
-          <i class="fas fa-play"></i> Watch
-        </button>
-        <button class="sp-stream-btn secondary" onclick="toggleStreams(this)">
-          <i class="fas fa-list"></i> Streams
-        </button>
-      </div>`;
+    statusHtml = `<div class="sp-match-time">
+      <span class="sp-time-val">${time}</span>
+      ${match.detail ? `<span class="sp-time-detail">${escHtml(match.detail.split(' at ').pop() || match.detail)}</span>` : ''}
+    </div>`;
   }
 
-  card.innerHTML = timeCol + infoCol + streamsCol;
-  card._sources  = sources;
-  card._title    = title;
+  // Team logos + title
+  const teamsHtml = (match.homeLogo || match.awayLogo)
+    ? `<div class="sp-match-teams">
+        ${match.awayLogo ? `<img class="sp-team-logo" src="${match.awayLogo}" alt="" onerror="this.style.display='none'" loading="lazy">` : ''}
+        <span class="sp-match-title">${escHtml(match.title)}</span>
+        ${match.homeLogo ? `<img class="sp-team-logo" src="${match.homeLogo}" alt="" onerror="this.style.display='none'" loading="lazy">` : ''}
+       </div>`
+    : `<div class="sp-match-info"><div class="sp-match-title">${escHtml(match.title)}</div></div>`;
 
+  // Watch button
+  const watchHtml = match.channels?.length
+    ? `<div class="sp-match-streams">
+        <button class="sp-stream-btn" onclick="openFirstStream(this)">
+          <i class="fas fa-play"></i> Watch
+        </button>
+        ${match.channels.length > 1
+          ? `<button class="sp-stream-btn secondary" onclick="toggleStreams(this)">
+               <i class="fas fa-list"></i>
+             </button>` : ''}
+       </div>`
+    : `<div class="sp-match-streams"><span class="sp-no-stream">No stream</span></div>`;
+
+  card.innerHTML = statusHtml + teamsHtml + watchHtml;
   return card;
 }
 
-/* ── Toggle expanded stream list ─────────────────────────────── */
+/* ── Toggle expanded channel list ────────────────────────────── */
 function toggleStreams(btn) {
   const card = btn.closest('.sp-match');
   const existing = card.querySelector('.sp-stream-list');
@@ -210,47 +166,48 @@ function toggleStreams(btn) {
   const list = document.createElement('div');
   list.className = 'sp-stream-list';
 
-  card._sources.forEach((src, i) => {
+  card._channels.forEach((ch, i) => {
     const b = document.createElement('button');
-    b.className = 'sp-stream-btn' + (i === 0 ? '' : ' secondary');
-    b.innerHTML = `<i class="fas fa-play"></i> Stream ${i + 1}
-                   <span style="opacity:.5;font-size:10px;margin-left:4px">${escHtml(src.source)}</span>`;
-    b.onclick = () => openPlayerDirect(src.source, src.id, card._title, card._sources);
+    b.className = 'sp-stream-btn' + (i > 0 ? ' secondary' : '');
+    b.innerHTML = `<i class="fas fa-play"></i> ${escHtml(ch.name)}`;
+    b.onclick = () => openPlayerDirect(ch.id, ch.name, card._title, card._channels);
     list.appendChild(b);
   });
 
   card.appendChild(list);
 }
 
-/* ── Open player from inline Watch button ────────────────────── */
-function openPlayer(source, id, btn) {
+/* ── Open first/default stream ───────────────────────────────── */
+function openFirstStream(btn) {
   const card = btn.closest('.sp-match');
-  openPlayerDirect(source, id, card._title, card._sources);
+  const ch   = card._channels[0];
+  if (ch) openPlayerDirect(ch.id, ch.name, card._title, card._channels);
 }
 
 /* ── Open player modal ───────────────────────────────────────── */
-function openPlayerDirect(source, id, title, allSources) {
-  const overlay  = document.getElementById('sp-player-overlay');
-  const iframe   = document.getElementById('sp-player-iframe');
-  const titleEl  = document.getElementById('sp-player-title');
-  const bar      = document.getElementById('sp-stream-bar');
+function openPlayerDirect(channelId, channelName, title, allChannels) {
+  const overlay = document.getElementById('sp-player-overlay');
+  const iframe  = document.getElementById('sp-player-iframe');
+  const titleEl = document.getElementById('sp-player-title');
+  const bar     = document.getElementById('sp-stream-bar');
 
-  titleEl.textContent = title;
-  iframe.src = API.sportsEmbed(source, id);
+  titleEl.textContent = `${title}  —  ${channelName}`;
+  iframe.src = API.sportsStream(channelId);
 
   bar.innerHTML = '';
-  if (allSources && allSources.length > 1) {
+  if (allChannels?.length > 1) {
     const lbl = document.createElement('span');
     lbl.className = 'sp-bar-label';
-    lbl.textContent = 'Streams:';
+    lbl.textContent = 'Channels:';
     bar.appendChild(lbl);
 
-    allSources.forEach((s, i) => {
+    allChannels.forEach(ch => {
       const b = document.createElement('button');
-      b.className = 'sp-bar-btn' + (s.source === source && s.id === id ? ' active' : '');
-      b.textContent = `Stream ${i + 1}`;
+      b.className = 'sp-bar-btn' + (ch.id === channelId ? ' active' : '');
+      b.textContent = ch.name;
       b.onclick = () => {
-        iframe.src = API.sportsEmbed(s.source, s.id);
+        iframe.src = API.sportsStream(ch.id);
+        titleEl.textContent = `${title}  —  ${ch.name}`;
         bar.querySelectorAll('.sp-bar-btn').forEach(x => x.classList.remove('active'));
         b.classList.add('active');
       };
