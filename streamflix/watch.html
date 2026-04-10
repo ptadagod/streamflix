@@ -2,51 +2,57 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#000000" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Watch — StreamFlix</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>▶️</text></svg>" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" />
   <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 </head>
 <body class="watch-body">
 
   <!-- NAVBAR -->
-  <nav class="watch-navbar">
-    <a href="index.html" class="logo">STREAMFLIX</a>
-    <a href="index.html" class="back-link">
-      <i class="fas fa-arrow-left"></i> Browse
-    </a>
+  <nav id="navbar" class="navbar watch-navbar scrolled">
+    <a class="logo" href="index.html">STREAM<span>FLIX</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="index.html">Movies</a></li>
+      <li><a href="index.html">TV Shows</a></li>
+      <li><a href="sports.html" class="sports-link">⚡ Sports</a></li>
+    </ul>
   </nav>
 
   <!-- PLAYER -->
   <div class="player-wrapper">
     <div class="player-aspect">
-      <iframe
-        id="player-iframe"
-        class="player-iframe"
-        allowfullscreen
-        allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-        referrerpolicy="no-referrer"
-        title="Video Player"
-      ></iframe>
+      <iframe id="player-iframe"
+              class="player-iframe"
+              src=""
+              allowfullscreen
+              allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+              referrerpolicy="no-referrer"
+              scrolling="no">
+      </iframe>
     </div>
   </div>
 
-  <!-- INFO + SIDEBAR -->
+  <!-- BELOW PLAYER -->
   <div class="player-details">
-    <div class="player-main">
-      <h1 class="player-title" id="player-title">
-        <span class="spinner" style="width:18px;height:18px;border-width:2px;display:inline-block;vertical-align:middle;"></span>
-      </h1>
-      <div class="player-meta"    id="player-meta"></div>
-      <p  class="player-overview" id="player-overview"></p>
-      <div id="player-extra"></div>
-      <div id="ep-selector"></div>
+    <div id="player-layout-inner" class="player-layout-inner">
+
+      <!-- Main info column -->
+      <div class="player-main-col">
+        <h1 id="player-title" class="player-title"></h1>
+        <div id="player-meta" class="player-meta"></div>
+        <p id="player-overview" class="player-overview"></p>
+        <div id="player-extra"></div>
+        <div id="ep-selector"></div>
+      </div>
+
+      <!-- Similar content sidebar -->
+      <aside class="player-sidebar-col">
+        <div id="similar-container"></div>
+      </aside>
+
     </div>
-    <aside>
-      <div id="similar-container"></div>
-    </aside>
   </div>
 
   <script src="js/api.js"></script>

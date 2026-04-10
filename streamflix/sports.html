@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StreamFlix Sports — Live Streams</title>
+  <link rel="stylesheet" href="css/sports.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+
+  <!-- ── TOP BAR ─────────────────────────────────────────────── -->
+  <header class="sp-header">
+    <a href="index.html" class="sp-back"><i class="fas fa-chevron-left"></i></a>
+    <div class="sp-logo">
+      <span class="sp-logo-icon">⚡</span>
+      <span class="sp-logo-text">STREAM<strong>SPORTS</strong></span>
+    </div>
+    <div class="sp-live-badge"><span class="sp-live-dot"></span> LIVE</div>
+  </header>
+
+  <!-- ── SPORT CATEGORY TABS ─────────────────────────────────── -->
+  <div class="sp-tabs-wrap">
+    <div id="sp-tabs" class="sp-tabs"></div>
+  </div>
+
+  <!-- ── MAIN CONTENT ────────────────────────────────────────── -->
+  <main class="sp-main">
+    <div id="sp-list" class="sp-list">
+      <div class="sp-spinner"><div class="sp-spin"></div><p>Loading schedule…</p></div>
+    </div>
+  </main>
+
+  <!-- ── PLAYER MODAL ────────────────────────────────────────── -->
+  <div id="sp-player-overlay" class="sp-player-overlay">
+    <div class="sp-player-box">
+      <div class="sp-player-topbar">
+        <span id="sp-player-title" class="sp-player-title"></span>
+        <button class="sp-player-close" onclick="closePlayer()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="sp-player-screen">
+        <iframe id="sp-player-iframe"
+                src=""
+                allowfullscreen
+                allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+                referrerpolicy="no-referrer">
+        </iframe>
+      </div>
+      <div id="sp-stream-bar" class="sp-stream-bar"></div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/sports.js"></script>
+</body>
+</html>
