@@ -22,17 +22,14 @@ function initNavbar() {
     navbar.classList.toggle('scrolled', window.scrollY > 50);
   }, { passive: true });
 
-  // Hamburger toggle
   hamburger?.addEventListener('click', () => {
     hamburger.classList.toggle('open');
     mobileNav.classList.toggle('open');
   });
 
-  // Nav link clicks (desktop + mobile)
   document.querySelectorAll('[data-page]').forEach(el => {
     el.addEventListener('click', e => {
       e.preventDefault();
-      // Close mobile nav
       hamburger?.classList.remove('open');
       mobileNav?.classList.remove('open');
       goToPage(el.dataset.page);
@@ -46,9 +43,18 @@ function goToPage(page) {
     el.classList.toggle('active', el.dataset.page === page)
   );
   closeSearch();
-  if (page === 'home')    { showEl('hero'); loadHome(); }
-  else if (page === 'movies')  { hideEl('hero'); loadMoviesPage(); }
-  else if (page === 'tvshows') { hideEl('hero'); loadTVPage(); }
+  hideEl('hero');
+  hideEl('rows-wrapper');
+  hideEl('search-page');
+  document.getElementById('sports-page').style.display = 'none';
+
+  if (page === 'home') {
+    showEl('hero');
+    showEl('rows-wrapper');
+    loadHome();
+  } else if (page === 'movies')  { loadMoviesPage(); }
+  else if (page === 'tvshows')   { loadTVPage(); }
+  else if (page === 'sports')    { loadSportsPage(); }
 }
 
 /* ── Home ────────────────────────────────────────────────────── */
@@ -63,12 +69,12 @@ async function loadHome() {
     ]);
     const w = document.getElementById('rows-wrapper');
     w.innerHTML = '';
-    appendRow(w, '🔥 Trending Now',          trending.results);
-    appendRow(w, '🎬 Popular Movies',         popM.results);
-    appendRow(w, '📺 Popular TV Shows',       popTV.results);
-    appendRow(w, '⭐ Top Rated Movies',       topM.results);
-    appendRow(w, '⭐ Top Rated TV',           topTV.results);
-    appendRow(w, '🎞️ Now Playing in Cinemas', now.results);
+    appendRow(w, '🔥 Trending Now',           trending.results);
+    appendRow(w, '🎬 Popular Movies',          popM.results);
+    appendRow(w, '📺 Popular TV Shows',        popTV.results);
+    appendRow(w, '⭐ Top Rated Movies',        topM.results);
+    appendRow(w, '⭐ Top Rated TV',            topTV.results);
+    appendRow(w, '🎞️ Now Playing in Cinemas',  now.results);
   } catch (e) {
     setRows(errState('Failed to load. Check your connection.'));
     console.error(e);
@@ -186,10 +192,7 @@ function initSearch() {
     else if (!q) closeSearch();
   });
   input.addEventListener('keydown', e => {
-    if (e.key === 'Escape') {
-      wrap.classList.remove('open');
-      input.value = ''; closeSearch();
-    }
+    if (e.key === 'Escape') { wrap.classList.remove('open'); input.value = ''; closeSearch(); }
   });
 }
 
@@ -197,6 +200,7 @@ async function doSearch(query) {
   const sp   = document.getElementById('search-page');
   const grid = document.getElementById('search-grid');
   hideEl('hero'); hideEl('rows-wrapper');
+  document.getElementById('sports-page').style.display = 'none';
   sp.style.display = 'block';
   sp.querySelector('h2').innerHTML = `Results for <span>"${escHtml(query)}"</span>`;
   grid.innerHTML = '<div class="spinner-wrap"><div class="spinner"></div></div>';
@@ -216,8 +220,9 @@ async function doSearch(query) {
 
 function closeSearch() {
   document.getElementById('search-page').style.display = 'none';
-  showEl('rows-wrapper');
-  if (currentPage === 'home') showEl('hero');
+  if (currentPage === 'home') { showEl('rows-wrapper'); showEl('hero'); }
+  else if (currentPage === 'sports') { document.getElementById('sports-page').style.display = 'block'; }
+  else showEl('rows-wrapper');
 }
 
 /* ── Modal ───────────────────────────────────────────────────── */
@@ -250,13 +255,13 @@ async function openModal(type, id) {
     const cast    = (data.credits?.cast||[]).slice(0,5).map(c=>c.name).join(', ');
     const dir     = (data.credits?.crew||[]).find(c=>c.job==='Director')?.name||'';
 
-    // Find best trailer from TMDB videos
+    // Trailer
     const videos  = data.videos?.results || [];
-    const trailer = videos.find(v => v.site === 'YouTube' && v.type === 'Trailer')
-                 || videos.find(v => v.site === 'YouTube' && v.type === 'Teaser')
-                 || videos.find(v => v.site === 'YouTube');
+    const trailer = videos.find(v => v.site==='YouTube' && v.type==='Trailer')
+                 || videos.find(v => v.site==='YouTube' && v.type==='Teaser')
+                 || videos.find(v => v.site==='YouTube');
 
-    const backdropEl = document.getElementById('modal-backdrop');
+    const backdropEl  = document.getElementById('modal-backdrop');
     const heroContent = document.getElementById('modal-hero-content');
 
     if (data.backdrop_path)
@@ -280,17 +285,14 @@ async function openModal(type, id) {
       closeModal();
     });
 
-    // Trailer button — swaps backdrop image for YouTube embed
     if (trailer) {
       document.getElementById('modal-trailer-btn').addEventListener('click', () => {
-        const isPlaying = backdropEl.querySelector('.trailer-iframe');
-        if (isPlaying) {
-          // Toggle back to backdrop image
-          backdropEl.querySelectorAll('.trailer-iframe').forEach(el => el.remove());
+        const playing = backdropEl.querySelector('.trailer-iframe');
+        if (playing) {
+          playing.remove();
           backdropEl.style.backgroundImage = `url(${backdropSrc(data.backdrop_path)})`;
           document.getElementById('modal-trailer-btn').innerHTML = '<i class="fab fa-youtube"></i> Trailer';
         } else {
-          // Inject YouTube iframe over the backdrop
           const iframe = document.createElement('iframe');
           iframe.className = 'trailer-iframe';
           iframe.src = `https://www.youtube.com/embed/${trailer.key}?autoplay=1&rel=0`;
@@ -310,8 +312,7 @@ async function openModal(type, id) {
         <div class="episode-picker">
           <h4><i class="fas fa-list"></i> Choose Episode</h4>
           <div class="episode-picker-controls">
-            <select class="select-styled" id="modal-season-sel"
-                    onchange="loadModalEps(${id}, this.value)">
+            <select class="select-styled" id="modal-season-sel" onchange="loadModalEps(${id}, this.value)">
               ${seasons.map(s=>`<option value="${s.season_number}">Season ${s.season_number}</option>`).join('')}
             </select>
             <select class="select-styled" id="modal-ep-sel"><option>Loading…</option></select>
@@ -339,10 +340,7 @@ async function openModal(type, id) {
       const first = data.seasons.find(s => s.season_number > 0);
       if (first) loadModalEps(id, first.season_number);
     }
-  } catch(e) {
-    body.innerHTML = errState('Could not load details.');
-    console.error(e);
-  }
+  } catch(e) { body.innerHTML = errState('Could not load details.'); console.error(e); }
 }
 
 async function loadModalEps(tvId, season) {
@@ -359,7 +357,6 @@ async function loadModalEps(tvId, season) {
 }
 
 function closeModal() {
-  // Stop trailer if playing
   document.querySelectorAll('.trailer-iframe').forEach(el => el.remove());
   document.getElementById('modal-overlay').classList.remove('active');
   document.body.style.overflow = '';
