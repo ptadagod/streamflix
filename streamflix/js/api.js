@@ -35,11 +35,32 @@ async function tmdb(endpoint, params = {}) {
   return res.json();
 }
 
-/* ─── Sports schedule fetch (streamed.su) ────────────────────── */
+/* ─── Sports schedule fetch ──────────────────────────────────── */
 async function fetchSportsMatches() {
-  const res = await fetch(`${STREAMED_API}/matches/all`);
-  if (!res.ok) throw new Error(`Schedule unavailable (${res.status})`);
-  return res.json(); // returns array of match objects
+  const TARGET = `${STREAMED_API}/matches/all`;
+
+  const attempts = [
+    { name: 'direct',      url: () => TARGET },
+    { name: 'allorigins',  url: () => `https://api.allorigins.win/raw?url=${encodeURIComponent(TARGET)}` },
+    { name: 'corsproxy',   url: () => `https://corsproxy.io/?${encodeURIComponent(TARGET)}` },
+    { name: 'codetabs',    url: () => `https://api.codetabs.com/v1/proxy?quest=${TARGET}` },
+  ];
+
+  for (const { name, url } of attempts) {
+    try {
+      console.log(`[Sports] trying ${name}…`);
+      const res = await fetch(url(), { signal: AbortSignal.timeout(8000) });
+      if (!res.ok) { console.warn(`[Sports] ${name} → HTTP ${res.status}`); continue; }
+      const data = await res.json();
+      if (!Array.isArray(data)) { console.warn(`[Sports] ${name} → not an array`); continue; }
+      console.log(`[Sports] ${name} ✓  (${data.length} matches)`);
+      return data;
+    } catch (e) {
+      console.warn(`[Sports] ${name} failed:`, e.message);
+    }
+  }
+
+  throw new Error('Could not load schedule — all sources failed. Open DevTools → Console for details.');
 }
 
 /* ─── Public API ─────────────────────────────────────────────── */
