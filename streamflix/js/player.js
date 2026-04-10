@@ -28,7 +28,6 @@ function renderInfo(data, type, season, episode) {
   const genres = (data.genres||[]).map(g=>g.name).join(' · ');
   const cast   = (data.credits?.cast||[]).slice(0,5).map(c=>c.name).join(', ');
   const dir    = (data.credits?.crew||[]).find(c=>c.job==='Director')?.name||'';
-
   document.getElementById('player-title').textContent = mediaTitle(data);
   document.getElementById('player-meta').innerHTML = `
     <span class="p-rating">★ ${mediaRating(data)}</span>
@@ -38,7 +37,6 @@ function renderInfo(data, type, season, episode) {
     ${data.runtime ? `<span>${data.runtime} min</span>` : ''}
     ${data.number_of_seasons ? `<span>${data.number_of_seasons} Season${data.number_of_seasons>1?'s':''}</span>` : ''}`;
   document.getElementById('player-overview').textContent = data.overview || '';
-
   const ex = document.getElementById('player-extra');
   if (ex) ex.innerHTML = `
     ${cast ? `<p><strong>Cast:</strong> ${escHtml(cast)}</p>` : ''}
@@ -55,8 +53,7 @@ async function renderEpSelector(data, tvId, curSeason, curEp) {
   seasonSel.className = 'select-styled';
   seasons.forEach(s => {
     const o = document.createElement('option');
-    o.value = s.season_number;
-    o.textContent = `Season ${s.season_number}`;
+    o.value = s.season_number; o.textContent = `Season ${s.season_number}`;
     if (s.season_number === curSeason) o.selected = true;
     seasonSel.appendChild(o);
   });
@@ -107,15 +104,12 @@ function renderSimilar(items, type) {
   if (!c) return;
   const filtered = items.filter(i => i.poster_path).slice(0, 12);
   if (!filtered.length) return;
-
   const titleEl = document.createElement('div');
   titleEl.className = 'sidebar-title';
   titleEl.textContent = 'More Like This';
   c.appendChild(titleEl);
-
   const list = document.createElement('div');
   list.className = 'similar-list';
-
   filtered.forEach(item => {
     const el = document.createElement('div');
     el.className = 'similar-item';
