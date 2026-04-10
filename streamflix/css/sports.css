@@ -184,20 +184,41 @@ button { cursor: pointer; font-family: inherit; border: none; background: none; 
   display: block; margin-top: 2px;
 }
 
-/* Info column */
+/* Time / status column extras */
+.sp-score {
+  display: block; font-size: 14px; font-weight: 800;
+  color: var(--sp-text); margin-top: 2px;
+}
+.sp-time-detail {
+  display: block; font-size: 10px; color: var(--sp-muted);
+  margin-top: 2px; white-space: nowrap;
+}
+.sp-live-tag {
+  font-size: 10px; font-weight: 800; letter-spacing: 1px;
+  color: var(--sp-live); display: block;
+  animation: sp-pulse 1.4s ease-in-out infinite;
+}
+
+/* Team logos row */
+.sp-match-teams {
+  flex: 1; min-width: 0;
+  display: flex; align-items: center; gap: 10px;
+}
+.sp-team-logo {
+  width: 28px; height: 28px; object-fit: contain;
+  flex-shrink: 0; border-radius: 4px;
+}
+
+/* Info column (fallback when no logos) */
 .sp-match-info { flex: 1; min-width: 0; }
 .sp-match-title {
   font-size: 13px; font-weight: 700;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  margin-bottom: 3px;
 }
-.sp-match-sub {
-  font-size: 11px; color: var(--sp-muted);
-  display: flex; align-items: center; gap: 6px;
-}
-.sp-popular-tag {
-  color: #ff9800; font-size: 10px;
-}
+
+/* Finished match */
+.sp-match.is-done { opacity: 0.55; }
+.sp-match.is-done:hover { opacity: 0.8; }
 
 /* Stream buttons column */
 .sp-match-streams {
